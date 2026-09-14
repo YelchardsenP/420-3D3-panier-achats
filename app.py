@@ -1,4 +1,4 @@
-import tkinter as tk
+import wx
 from datetime import datetime
 
 
@@ -13,114 +13,116 @@ ARTICLES = [
 SEUIL_LIVRAISON = 50.0
 
 
-class App:
+class App(wx.Frame):
     def __init__(self):
-        self.fenetre = tk.Tk()
-        self.fenetre.title("Panier d'achat")
-        self.fenetre.resizable(False, False)
-
+        super().__init__(None, title="Panier d'achat")
         self.panier = []
 
+        panel = wx.Panel(self)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+
         # Titre
-        tk.Label(
-            self.fenetre,
-            text="Panier d'achat",
-            font=("Arial", 16, "bold")
-        ).pack(pady=10)
+        titre = wx.StaticText(panel, label="Panier d'achat")
+        font = titre.GetFont()
+        font.SetPointSize(16)
+        font.MakeBold()
+        titre.SetFont(font)
+        sizer.Add(titre, 0, wx.ALL | wx.CENTER, 10)
 
-        # Boutons d'ajout
-        frame_articles = tk.LabelFrame(
-            self.fenetre, text="Articles disponibles", padx=10, pady=10
-        )
-        frame_articles.pack(fill=tk.X, padx=10, pady=5)
-
+        # Articles disponibles
+        box_articles = wx.StaticBox(panel, label="Articles disponibles")
+        sizer_articles = wx.StaticBoxSizer(box_articles, wx.VERTICAL)
         for article in ARTICLES:
-            tk.Button(
-                frame_articles,
-                text=f"Ajouter {article['nom']} ({article['prix']:.2f} $)",
-                command=lambda a=article: self.ajouter(a)
-            ).pack(fill=tk.X, pady=2)
+            btn = wx.Button(
+                panel,
+                label=f"Ajouter {article['nom']} ({article['prix']:.2f} $)"
+            )
+            btn.Bind(wx.EVT_BUTTON, lambda e, a=article: self.ajouter(a))
+            sizer_articles.Add(btn, 0, wx.ALL | wx.EXPAND, 2)
+        sizer.Add(sizer_articles, 0, wx.ALL | wx.EXPAND, 10)
 
-        # Contenu du panier
-        frame_panier = tk.LabelFrame(
-            self.fenetre, text="Mon panier", padx=10, pady=10
-        )
-        frame_panier.pack(fill=tk.X, padx=10, pady=5)
-
-        self.liste_articles = tk.Listbox(frame_panier, height=6)
-        self.liste_articles.pack(fill=tk.X)
-
-        tk.Button(
-            frame_panier,
-            text="Retirer l'article sélectionné",
-            command=self.retirer
-        ).pack(pady=5)
+        # Panier
+        box_panier = wx.StaticBox(panel, label="Mon panier")
+        sizer_panier = wx.StaticBoxSizer(box_panier, wx.VERTICAL)
+        self.liste_articles = wx.ListBox(panel, size=(300, 120))
+        sizer_panier.Add(self.liste_articles, 0, wx.ALL | wx.EXPAND, 5)
+        btn_retirer = wx.Button(panel, label="Retirer l'article sélectionné")
+        btn_retirer.Bind(wx.EVT_BUTTON, self.retirer)
+        sizer_panier.Add(btn_retirer, 0, wx.ALL | wx.CENTER, 5)
+        sizer.Add(sizer_panier, 0, wx.ALL | wx.EXPAND, 10)
 
         # Total
-        self.label_total = tk.Label(
-            self.fenetre,
-            text="Total : 0.00 $",
-            font=("Arial", 14, "bold")
-        )
-        self.label_total.pack(pady=5)
+        self.label_total = wx.StaticText(panel, label="Total : 0.00 $")
+        font_total = self.label_total.GetFont()
+        font_total.SetPointSize(14)
+        font_total.MakeBold()
+        self.label_total.SetFont(font_total)
+        sizer.Add(self.label_total, 0, wx.ALL | wx.CENTER, 5)
 
         # Indicateur livraison
-        self.label_livraison = tk.Label(
-            self.fenetre,
-            text=f"Ajoutez {SEUIL_LIVRAISON:.2f} $ pour la livraison gratuite",
-            font=("Arial", 11),
-            fg="gray"
+        self.label_livraison = wx.StaticText(
+            panel,
+            label=f"Ajoutez {SEUIL_LIVRAISON:.2f} $ pour la livraison gratuite"
         )
-        self.label_livraison.pack(pady=5)
+        sizer.Add(self.label_livraison, 0, wx.ALL | wx.CENTER, 5)
 
-        self.fenetre.mainloop()
+        panel.SetSizer(sizer)
+        self.Fit()
 
     def ajouter(self, article):
         self.panier.append(article)
         self.actualiser()
 
-        # Écrire dans le log
         horodatage = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with open("panier.log", 'a') as f:
-            f.write(f"{horodatage} | AJOUT : {article['nom']} — {article['prix']:.2f} $\n")
+            f.write(
+                f"{horodatage} | AJOUT : {article['nom']} — "
+                f"{article['prix']:.2f} $\n"
+            )
 
-    def retirer(self):
-        selection = self.liste_articles.curselection()
-        if not selection:
+    def retirer(self, event):
+        selection = self.liste_articles.GetSelection()
+        if selection == wx.NOT_FOUND:
             return
-        index = selection[0]
-        article = self.panier[index]
-        self.panier.pop(index)
+        article = self.panier[selection]
+        self.panier.pop(selection)
         self.actualiser()
 
-        # Écrire dans le log
         horodatage = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with open("panier.log", 'a') as f:
-            f.write(f"{horodatage} | RETRAIT : {article['nom']} — {article['prix']:.2f} $\n")
+            f.write(
+                f"{horodatage} | RETRAIT : {article['nom']} — "
+                f"{article['prix']:.2f} $\n"
+            )
 
     def actualiser(self):
-        # Mettre à jour la liste des articles
-        self.liste_articles.delete(0, tk.END)
+        # Mettre à jour la liste
+        self.liste_articles.Clear()
         for article in self.panier:
-            self.liste_articles.insert(tk.END, f"{article['nom']} — {article['prix']:.2f} $")
+            self.liste_articles.Append(
+                f"{article['nom']} — {article['prix']:.2f} $"
+            )
 
         # Mettre à jour le total
         total = sum(a['prix'] for a in self.panier)
-        self.label_total.config(text=f"Total : {total:.2f} $")
+        self.label_total.SetLabel(f"Total : {total:.2f} $")
 
         # Mettre à jour l'indicateur de livraison
         if total >= SEUIL_LIVRAISON:
-            self.label_livraison.config(
-                text="✓ Livraison gratuite !",
-                fg="green"
-            )
+            self.label_livraison.SetLabel("✓ Livraison gratuite !")
+            self.label_livraison.SetForegroundColour(wx.GREEN)
         else:
             manque = SEUIL_LIVRAISON - total
-            self.label_livraison.config(
-                text=f"Ajoutez {manque:.2f} $ pour la livraison gratuite",
-                fg="gray"
+            self.label_livraison.SetLabel(
+                f"Ajoutez {manque:.2f} $ pour la livraison gratuite"
             )
+            self.label_livraison.SetForegroundColour(wx.LIGHT_GREY)
+
+        self.label_livraison.Refresh()
 
 
 if __name__ == "__main__":
-    app = App()
+    app = wx.App()
+    fenetre = App()
+    fenetre.Show()
+    app.MainLoop()

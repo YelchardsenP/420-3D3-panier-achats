@@ -5,16 +5,18 @@ class Panier(Sujet):
     #representation de liste d'articles
     def __init__(self):
         super().__init__() #instansiation liste observateurs
-        self._liste_articles = []
+        self._articles = []
     
     #ajouter un article
+    # TODO: A MODIF POUR INCLURE INDE
     def ajouter(self, article) -> None:
-        pass
+        self._articles.append(article)
     
     #retirer un article
-    def retirer(self, index) -> None:
-        pass
+    # TODO: A MODIF POUR INCLURE INDEX
+    def retirer(self, article) -> None:
+        self._articles.remove(article)
     
-    #recevoir les donnees
+    #retour dun dict avec articles
     def get_donnees(self) -> dict:
-        pass 
+        return {"articles" : self._articles}

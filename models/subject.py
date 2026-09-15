@@ -1,4 +1,4 @@
-from abc import ABC, abstactmethod
+from abc import ABC, abstractmethod
 
 class Sujet(ABC):
 

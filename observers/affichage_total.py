@@ -11,7 +11,7 @@ class AffichageTotal(Observateur):
             font=("Arial", 14, "bold"),
             fg="gray"
         )
-        self._label(pady=5)
+        self._label.pack(pady=5)
     
     def actualiser(self, sujet) -> None:
 
